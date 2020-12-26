@@ -8,3 +8,4 @@ version = "0.1.0"
 
 [dependencies]
 ggez = "0.5.1"
+ultraviolet = "0.7.5"

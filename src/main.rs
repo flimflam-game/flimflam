@@ -2,6 +2,7 @@ use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler};
 use ggez::graphics;
 use ggez::{Context, ContextBuilder, GameResult};
+use ultraviolet::Vec2;
 
 fn main() -> ggez::GameResult {
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
@@ -17,13 +18,12 @@ fn main() -> ggez::GameResult {
 }
 
 struct Game {
-    x: f32,
-    y: f32,
+    pos: Vec2,
 }
 
 impl Game {
     fn new(_ctx: &mut Context) -> Game {
-        Game { x: 0.0, y: 0.0 }
+        Game { pos: Vec2::zero() }
     }
 }
 
@@ -38,7 +38,7 @@ impl EventHandler for Game {
         let rect = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
-            graphics::Rect::new(self.x, self.y, 10.0, 20.0),
+            graphics::Rect::new(self.pos.x, self.pos.y, 10.0, 20.0),
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
 
