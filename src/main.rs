@@ -16,11 +16,14 @@ fn main() -> ggez::GameResult {
     Ok(())
 }
 
-struct Game;
+struct Game {
+    x: f32,
+    y: f32,
+}
 
 impl Game {
     fn new(_ctx: &mut Context) -> Game {
-        Game
+        Game { x: 0.0, y: 0.0 }
     }
 }
 
@@ -35,7 +38,7 @@ impl EventHandler for Game {
         let rect = graphics::Mesh::new_rectangle(
             ctx,
             graphics::DrawMode::fill(),
-            graphics::Rect::new(0.0, 0.0, 10.0, 20.0),
+            graphics::Rect::new(self.x, self.y, 10.0, 20.0),
             graphics::Color::new(1.0, 0.0, 0.0, 1.0),
         )?;
 
