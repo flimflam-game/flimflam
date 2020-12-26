@@ -547,6 +547,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "flimflam-model"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "ultraviolet",
+]
+
+[[package]]
 name = "flimflam-server"
 version = "0.1.0"
 
@@ -1831,6 +1839,9 @@ name = "serde"
 version = "1.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06c64263859d87aa2eb554587e2d23183398d617427327cf2b3d0ed8c69e4800"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"
@@ -2120,6 +2131,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6650a58414f856056ccc651abd3b9d80c384206250c3a621224497503a0f9f2"
 dependencies = [
+ "serde",
  "wide",
 ]
 
