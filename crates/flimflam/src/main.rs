@@ -1,8 +1,10 @@
+use flimflam_model::Event;
 use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler, KeyCode};
 use ggez::input::keyboard;
 use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
+use std::net::TcpStream;
 use ultraviolet::Vec2;
 
 const SPEED: f32 = 100.0;
@@ -13,7 +15,7 @@ fn main() -> ggez::GameResult {
         .build()
         .unwrap();
 
-    let mut game = Game::new(&mut ctx);
+    let mut game = Game::new(&mut ctx)?;
 
     event::run(&mut ctx, &mut event_loop, &mut game)?;
 
@@ -22,11 +24,15 @@ fn main() -> ggez::GameResult {
 
 struct Game {
     pos: Vec2,
+    server_connection: TcpStream,
 }
 
 impl Game {
-    fn new(_ctx: &mut Context) -> Game {
-        Game { pos: Vec2::zero() }
+    fn new(_ctx: &mut Context) -> GameResult<Game> {
+        Ok(Game {
+            pos: Vec2::zero(),
+            server_connection: TcpStream::connect("127.0.0.1:1234")?,
+        })
     }
 }
 
@@ -56,7 +62,14 @@ impl EventHandler for Game {
             movement.normalize();
         }
 
-        self.pos += movement * SPEED * timer::delta(ctx).as_secs_f32();
+        let diff = movement * SPEED * timer::delta(ctx).as_secs_f32();
+
+        if diff != Vec2::zero() {
+            self.pos += diff;
+
+            jsonl::write(&mut self.server_connection, &Event::PlayerMoved(self.pos))
+                .unwrap_or_else(|err| eprintln!("Error: {:?}", anyhow::Error::new(err)));
+        }
 
         Ok(())
     }

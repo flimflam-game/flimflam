@@ -63,6 +63,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "000444226fcff248f2bc4c7625be32c63caccfecc2723a2b9f78a7487a49c407"
 
 [[package]]
+name = "anyhow"
+version = "1.0.36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68803225a7b13e47191bab76f2687382b60d259e8cf37f6e1893658b84bb9479"
+
+[[package]]
 name = "approx"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -542,7 +548,10 @@ dependencies = [
 name = "flimflam"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "flimflam-model",
  "ggez",
+ "jsonl",
  "ultraviolet",
 ]
 
@@ -557,6 +566,11 @@ dependencies = [
 [[package]]
 name = "flimflam-server"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "flimflam-model",
+ "jsonl",
+]
 
 [[package]]
 name = "fnv"
@@ -937,6 +951,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc797adac5f083b8ff0ca6f6294a999393d76e197c36488e2ef732c4715f6fa3"
 dependencies = [
  "byteorder",
+]
+
+[[package]]
+name = "jsonl"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9293f60ee9dda06b24d35ec5d5397aa1b29d297271810e0c34a4d4d12816837"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

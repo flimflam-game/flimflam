@@ -5,5 +5,8 @@ name = "flimflam"
 version = "0.1.0"
 
 [dependencies]
+anyhow = "1.0.36"
+flimflam-model = {path = "../flimflam-model"}
 ggez = "0.5.1"
+jsonl = "1.0.0"
 ultraviolet = "0.7.5"

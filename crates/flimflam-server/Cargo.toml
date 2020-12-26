@@ -5,3 +5,6 @@ name = "flimflam-server"
 version = "0.1.0"
 
 [dependencies]
+anyhow = "1.0.36"
+flimflam-model = {path = "../flimflam-model"}
+jsonl = "1.0.0"
