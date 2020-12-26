@@ -5,6 +5,8 @@ use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
 use ultraviolet::Vec2;
 
+const SPEED: f32 = 100.0;
+
 fn main() -> ggez::GameResult {
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
         .window_setup(WindowSetup::default().title("Flimflam"))
@@ -54,7 +56,7 @@ impl EventHandler for Game {
             movement.normalize();
         }
 
-        self.pos += movement * timer::delta(ctx).as_secs_f32();
+        self.pos += movement * SPEED * timer::delta(ctx).as_secs_f32();
 
         Ok(())
     }
