@@ -15,7 +15,8 @@ fn main() -> ggez::GameResult {
         .build()
         .unwrap();
 
-    let mut game = Game::new(&mut ctx)?;
+    let server_connection = TcpStream::connect("127.0.0.1:1234")?;
+    let mut game = Game::new(server_connection);
 
     event::run(&mut ctx, &mut event_loop, &mut game)?;
 
@@ -28,11 +29,11 @@ struct Game {
 }
 
 impl Game {
-    fn new(_ctx: &mut Context) -> GameResult<Game> {
-        Ok(Game {
+    fn new(server_connection: TcpStream) -> Self {
+        Self {
             pos: Vec2::zero(),
-            server_connection: TcpStream::connect("127.0.0.1:1234")?,
-        })
+            server_connection,
+        }
     }
 }
 
