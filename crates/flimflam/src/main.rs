@@ -1,4 +1,4 @@
-use flimflam_model::Event;
+use flimflam_model::{Client, Event};
 use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler, KeyCode};
 use ggez::input::keyboard;
@@ -9,13 +9,14 @@ use ultraviolet::Vec2;
 
 const SPEED: f32 = 100.0;
 
-fn main() -> ggez::GameResult {
+fn main() -> anyhow::Result<()> {
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
         .window_setup(WindowSetup::default().title("Flimflam"))
         .build()
         .unwrap();
 
-    let server_connection = TcpStream::connect("127.0.0.1:1234")?;
+    let mut server_connection = TcpStream::connect("127.0.0.1:1234")?;
+    jsonl::write(&mut server_connection, &Event::JoinGame(Client::new()))?;
     let mut game = Game::new(server_connection);
 
     event::run(&mut ctx, &mut event_loop, &mut game)?;
