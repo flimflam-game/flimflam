@@ -31,6 +31,16 @@ impl EventHandler for Game {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
+
+        let rect = graphics::Mesh::new_rectangle(
+            ctx,
+            graphics::DrawMode::fill(),
+            graphics::Rect::new(0.0, 0.0, 10.0, 20.0),
+            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+        )?;
+
+        graphics::draw(ctx, &rect, ([0.0, 0.0],))?;
+
         graphics::present(ctx)?;
 
         Ok(())
