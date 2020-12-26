@@ -1,6 +1,7 @@
 use ggez::conf::WindowSetup;
-use ggez::event::{self, EventHandler};
+use ggez::event::{self, EventHandler, KeyCode};
 use ggez::graphics;
+use ggez::input::keyboard;
 use ggez::{Context, ContextBuilder, GameResult};
 use ultraviolet::Vec2;
 
@@ -28,7 +29,33 @@ impl Game {
 }
 
 impl EventHandler for Game {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let keys = keyboard::pressed_keys(ctx);
+
+        let mut movement = Vec2::zero();
+
+        if keys.contains(&KeyCode::S) {
+            movement.y += 1.0;
+        }
+
+        if keys.contains(&KeyCode::W) {
+            movement.y -= 1.0;
+        }
+
+        if keys.contains(&KeyCode::D) {
+            movement.x += 1.0;
+        }
+
+        if keys.contains(&KeyCode::A) {
+            movement.x -= 1.0;
+        }
+
+        if movement != Vec2::zero() {
+            movement.normalize();
+        }
+
+        self.pos += movement;
+
         Ok(())
     }
 
