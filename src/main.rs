@@ -1,7 +1,7 @@
 use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler, KeyCode};
-use ggez::graphics;
 use ggez::input::keyboard;
+use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
 use ultraviolet::Vec2;
 
@@ -54,7 +54,7 @@ impl EventHandler for Game {
             movement.normalize();
         }
 
-        self.pos += movement;
+        self.pos += movement * timer::delta(ctx).as_secs_f32();
 
         Ok(())
     }
