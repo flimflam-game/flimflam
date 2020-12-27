@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use ultraviolet::Vec2;
 use uuid::Uuid;
 
@@ -9,15 +10,25 @@ pub enum Event {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum Update {
+    PlayerMoved(Vec2),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Client {
     uuid: Uuid,
+    address: SocketAddr,
 }
 
 impl Client {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(address: SocketAddr) -> Self {
         Self {
             uuid: Uuid::new_v4(),
+            address,
         }
+    }
+
+    pub fn address(&self) -> SocketAddr {
+        self.address
     }
 }
