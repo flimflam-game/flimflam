@@ -65,7 +65,7 @@ impl Game {
 }
 
 impl EventHandler for Game {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         self.process_outstanding_updates();
 
         let keys = keyboard::pressed_keys(ctx);
@@ -107,7 +107,7 @@ impl EventHandler for Game {
         Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, graphics::BLACK);
 
         let rect = graphics::Mesh::new_rectangle(
