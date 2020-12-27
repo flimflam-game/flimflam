@@ -7,18 +7,21 @@ use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
 use std::io::BufReader;
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::thread;
+use std::{env, thread};
 use ultraviolet::Vec2;
 
 const SPEED: f32 = 100.0;
 
 fn main() -> anyhow::Result<()> {
-    let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
-        .window_setup(WindowSetup::default().title("Flimflam"))
-        .build()
-        .unwrap();
+    let mut server_connection = {
+        let server_address = if let Some(addr) = env::args().nth(1) {
+            addr
+        } else {
+            anyhow::bail!("expected server address")
+        };
 
-    let mut server_connection = TcpStream::connect("127.0.0.1:1234")?;
+        TcpStream::connect(server_address)?
+    };
 
     let address = ([127, 0, 0, 1], portpicker::pick_unused_port().unwrap()).into();
 
@@ -34,6 +37,11 @@ fn main() -> anyhow::Result<()> {
     });
 
     let mut game = Game::new(server_connection, rx);
+
+    let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
+        .window_setup(WindowSetup::default().title("Flimflam"))
+        .build()
+        .unwrap();
 
     event::run(&mut ctx, &mut event_loop, &mut game)?;
 
