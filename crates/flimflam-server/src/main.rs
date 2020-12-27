@@ -1,5 +1,5 @@
 use flimflam_model::{Client, Event, Update};
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 use std::io::BufReader;
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
@@ -7,7 +7,7 @@ use std::thread;
 
 fn main() -> anyhow::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:1234")?;
-    let clients = Arc::new(Mutex::new(Vec::new()));
+    let clients = Arc::new(RwLock::new(Vec::new()));
 
     for stream in listener.incoming() {
         let stream = stream?;
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn handle_connection(stream: TcpStream, clients: Arc<Mutex<Vec<Client>>>) -> anyhow::Result<()> {
+fn handle_connection(stream: TcpStream, clients: Arc<RwLock<Vec<Client>>>) -> anyhow::Result<()> {
     let mut stream = BufReader::new(stream);
 
     let client = match jsonl::read(&mut stream)? {
@@ -30,7 +30,7 @@ fn handle_connection(stream: TcpStream, clients: Arc<Mutex<Vec<Client>>>) -> any
     };
 
     {
-        clients.lock().push(client.clone());
+        clients.write().push(client.clone());
     }
 
     loop {
@@ -38,7 +38,7 @@ fn handle_connection(stream: TcpStream, clients: Arc<Mutex<Vec<Client>>>) -> any
 
         match event {
             Event::PlayerMoved(pos) => {
-                let clients = clients.lock();
+                let clients = clients.read();
                 let all_other_clients = clients.iter().filter(|c| **c != client);
 
                 for c in all_other_clients {
