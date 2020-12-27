@@ -23,7 +23,11 @@ fn main() -> anyhow::Result<()> {
         TcpStream::connect(server_address)?
     };
 
-    let address = ([127, 0, 0, 1], portpicker::pick_unused_port().unwrap()).into();
+    let address = (
+        flimflam_utils::get_ip()?,
+        portpicker::pick_unused_port().unwrap(),
+    )
+        .into();
 
     jsonl::write(
         &mut server_connection,

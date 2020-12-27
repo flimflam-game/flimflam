@@ -1,0 +1,9 @@
+[package]
+authors = ["Aramis Razzaghipour <aramisnoah@gmail.com>"]
+edition = "2018"
+name = "flimflam-utils"
+version = "0.1.0"
+
+[dependencies]
+anyhow = "1.0.36"
+pnet = "0.27.2"

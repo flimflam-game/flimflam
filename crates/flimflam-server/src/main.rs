@@ -1,12 +1,17 @@
 use flimflam_model::{Client, Event, Update};
 use parking_lot::RwLock;
 use std::io::BufReader;
-use std::net::{TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::Arc;
 use std::thread;
 
 fn main() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:1234")?;
+    let ip = flimflam_utils::get_ip()?;
+    let address: SocketAddr = (ip, 1234).into();
+
+    println!("Listening on {}", address);
+
+    let listener = TcpListener::bind(address)?;
     let clients = Arc::new(RwLock::new(Vec::new()));
 
     for stream in listener.incoming() {
