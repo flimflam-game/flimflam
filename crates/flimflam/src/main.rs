@@ -1,4 +1,4 @@
-use flimflam_model::{Client, Event, Player};
+use flimflam_model::{Client, CurrentState, Event, Player};
 use flume::{Receiver, Sender};
 use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler, KeyCode};
@@ -42,13 +42,16 @@ fn main() -> anyhow::Result<()> {
         ),
     )?;
 
+    let CurrentState { existing_players } =
+        jsonl::read(BufReader::new(TcpListener::bind(address)?.accept()?.0))?;
+
     let (tx, rx) = flume::unbounded();
 
     thread::spawn(move || {
         listen_for_events(tx, address).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
     });
 
-    let mut game = Game::new(client, server_connection, rx);
+    let mut game = Game::new(client, existing_players, server_connection, rx);
 
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
         .window_setup(WindowSetup::default().title("Flimflam"))
@@ -69,13 +72,18 @@ struct Game {
 }
 
 impl Game {
-    fn new(client: Client, server_connection: TcpStream, events_rx: Receiver<Event>) -> Self {
+    fn new(
+        client: Client,
+        other_players: HashMap<Client, Player>,
+        server_connection: TcpStream,
+        events_rx: Receiver<Event>,
+    ) -> Self {
         Self {
             client,
             player: Player {
                 position: Vec2::zero(),
             },
-            other_players: HashMap::new(),
+            other_players,
             server_connection: BufReader::new(server_connection),
             events_rx,
         }

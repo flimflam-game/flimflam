@@ -1,4 +1,4 @@
-use flimflam_model::{Client, Event, Player};
+use flimflam_model::{Client, CurrentState, Event, Player};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::io::BufReader;
@@ -37,6 +37,13 @@ fn handle_connection(
         Event::JoinGame(c, p) => (c, p),
         _ => anyhow::bail!("must send JoinGame event before others"),
     };
+
+    jsonl::write(
+        TcpStream::connect(client.address())?,
+        &CurrentState {
+            existing_players: players.read().clone(),
+        },
+    )?;
 
     {
         players.write().insert(client.clone(), player.clone());
