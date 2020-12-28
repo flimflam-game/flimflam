@@ -10,6 +10,7 @@ flimflam-model = {path = "../flimflam-model"}
 flimflam-utils = {path = "../flimflam-utils"}
 flume = "0.10.0"
 ggez = "0.5.1"
+image = "0.23.12"
 jsonl = "1.0.0"
 portpicker = "0.1.0"
 ultraviolet = "0.7.5"

@@ -5,8 +5,10 @@ use ggez::event::{self, EventHandler, KeyCode};
 use ggez::input::keyboard;
 use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
+use image::ImageDecoder;
 use std::collections::HashMap;
-use std::io::BufReader;
+use std::convert::TryInto;
+use std::io::{BufReader, Read};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::{env, iter, thread};
 use ultraviolet::Vec2;
@@ -51,12 +53,12 @@ fn main() -> anyhow::Result<()> {
         listen_for_events(tx, address).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
     });
 
-    let mut game = Game::new(client, existing_players, server_connection, rx);
-
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
         .window_setup(WindowSetup::default().title("Flimflam"))
         .build()
         .unwrap();
+
+    let mut game = Game::new(&mut ctx, client, existing_players, server_connection, rx);
 
     event::run(&mut ctx, &mut event_loop, &mut game)?;
 
@@ -69,10 +71,12 @@ struct Game {
     other_players: HashMap<Client, Player>,
     server_connection: BufReader<TcpStream>,
     events_rx: Receiver<Event>,
+    player_sprite: graphics::Image,
 }
 
 impl Game {
     fn new(
+        ctx: &mut Context,
         client: Client,
         other_players: HashMap<Client, Player>,
         server_connection: TcpStream,
@@ -86,6 +90,7 @@ impl Game {
             other_players,
             server_connection: BufReader::new(server_connection),
             events_rx,
+            player_sprite: load_png(ctx, include_bytes!("../../../art/player_sprite.png")).unwrap(),
         }
     }
 
@@ -148,14 +153,13 @@ impl EventHandler for Game {
         graphics::clear(ctx, graphics::BLACK);
 
         for player in self.other_players.values().chain(iter::once(&self.player)) {
-            let rect = graphics::Mesh::new_rectangle(
+            graphics::draw(
                 ctx,
-                graphics::DrawMode::fill(),
-                graphics::Rect::new(player.position.x, player.position.y, 10.0, 20.0),
-                graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+                &self.player_sprite,
+                graphics::DrawParam::default()
+                    .dest([player.position.x, player.position.y])
+                    .scale([0.1, 0.1]),
             )?;
-
-            graphics::draw(ctx, &rect, ([0.0, 0.0],))?;
         }
 
         graphics::present(ctx)?;
@@ -174,4 +178,16 @@ fn listen_for_events(tx: Sender<Event>, address: SocketAddr) -> anyhow::Result<(
     }
 
     Ok(())
+}
+
+fn load_png(ctx: &mut Context, image_data: &[u8]) -> anyhow::Result<graphics::Image> {
+    let decoder = image::codecs::png::PngDecoder::new(image_data)?;
+
+    let (width, height) = decoder.dimensions();
+    let (width, height): (u16, u16) = (width.try_into()?, height.try_into()?);
+
+    let mut rgba = Vec::new();
+    decoder.into_reader()?.read_to_end(&mut rgba)?;
+
+    Ok(graphics::Image::from_rgba8(ctx, width, height, &rgba)?)
 }
