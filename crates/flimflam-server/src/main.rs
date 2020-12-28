@@ -1,5 +1,6 @@
-use flimflam_model::{Client, Event, Update};
+use flimflam_model::{Client, Event, Player};
 use parking_lot::RwLock;
+use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::sync::Arc;
@@ -12,47 +13,68 @@ fn main() -> anyhow::Result<()> {
     println!("Listening on {}", address);
 
     let listener = TcpListener::bind(address)?;
-    let clients = Arc::new(RwLock::new(Vec::new()));
+    let players = Arc::new(RwLock::new(HashMap::new()));
 
     for stream in listener.incoming() {
         let stream = stream?;
-        let clients = Arc::clone(&clients);
+        let players = Arc::clone(&players);
 
         thread::spawn(move || {
-            handle_connection(stream, clients).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
+            handle_connection(stream, players).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
         });
     }
 
     Ok(())
 }
 
-fn handle_connection(stream: TcpStream, clients: Arc<RwLock<Vec<Client>>>) -> anyhow::Result<()> {
+fn handle_connection(
+    stream: TcpStream,
+    players: Arc<RwLock<HashMap<Client, Player>>>,
+) -> anyhow::Result<()> {
     let mut stream = BufReader::new(stream);
 
-    let client = match jsonl::read(&mut stream)? {
-        Event::JoinGame(c) => c,
+    let (client, player) = match jsonl::read(&mut stream)? {
+        Event::JoinGame(c, p) => (c, p),
         _ => anyhow::bail!("must send JoinGame event before others"),
     };
 
     {
-        clients.write().push(client.clone());
+        players.write().insert(client.clone(), player.clone());
     }
+
+    tell_all_other_clients(
+        &client,
+        &Event::JoinGame(client.clone(), player),
+        players.read().keys(),
+    )?;
 
     loop {
         let event = jsonl::read(&mut stream)?;
 
-        match event {
-            Event::PlayerMoved(pos) => {
-                let clients = clients.read();
-                let all_other_clients = clients.iter().filter(|c| **c != client);
-
-                for c in all_other_clients {
-                    let stream = TcpStream::connect(c.address())?;
-                    jsonl::write(stream, &Update::PlayerMoved(pos))?;
+        match &event {
+            Event::PlayerUpdate(c, p) => {
+                {
+                    players.write().insert(c.clone(), p.clone()).unwrap();
                 }
-            }
 
-            Event::JoinGame(_) => anyhow::bail!("cannot send JoinGame event after first"),
+                tell_all_other_clients(&client, &event, players.read().keys())?;
+            }
+            Event::JoinGame(_, _) => anyhow::bail!("cannot send JoinGame event after first"),
         }
     }
+}
+
+fn tell_all_other_clients<'a>(
+    client: &Client,
+    event: &Event,
+    clients: impl Iterator<Item = &'a Client>,
+) -> anyhow::Result<()> {
+    let all_other_clients = clients.filter(|c| *c != client);
+
+    for c in all_other_clients {
+        let stream = TcpStream::connect(c.address())?;
+        jsonl::write(stream, event)?;
+    }
+
+    Ok(())
 }

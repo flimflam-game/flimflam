@@ -5,16 +5,16 @@ use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Event {
-    PlayerMoved(Vec2),
-    JoinGame(Client),
+    PlayerUpdate(Client, Player),
+    JoinGame(Client, Player),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Update {
-    PlayerMoved(Vec2),
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Player {
+    pub position: Vec2,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Client {
     uuid: Uuid,
     address: SocketAddr,

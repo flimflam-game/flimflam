@@ -1,13 +1,14 @@
-use flimflam_model::{Client, Event, Update};
+use flimflam_model::{Client, Event, Player};
 use flume::{Receiver, Sender};
 use ggez::conf::WindowSetup;
 use ggez::event::{self, EventHandler, KeyCode};
 use ggez::input::keyboard;
 use ggez::{graphics, timer};
 use ggez::{Context, ContextBuilder, GameResult};
+use std::collections::HashMap;
 use std::io::BufReader;
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::{env, thread};
+use std::{env, iter, thread};
 use ultraviolet::Vec2;
 
 const SPEED: f32 = 100.0;
@@ -29,18 +30,25 @@ fn main() -> anyhow::Result<()> {
     )
         .into();
 
+    let client = Client::new(address);
+
     jsonl::write(
         &mut server_connection,
-        &Event::JoinGame(Client::new(address)),
+        &Event::JoinGame(
+            client.clone(),
+            Player {
+                position: Vec2::zero(),
+            },
+        ),
     )?;
 
     let (tx, rx) = flume::unbounded();
 
     thread::spawn(move || {
-        listen_for_updates(tx, address).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
+        listen_for_events(tx, address).unwrap_or_else(|err| eprintln!("Error: {:?}", err))
     });
 
-    let mut game = Game::new(server_connection, rx);
+    let mut game = Game::new(client, server_connection, rx);
 
     let (mut ctx, mut event_loop) = ContextBuilder::new("flimflam", "The Razzaghipours")
         .window_setup(WindowSetup::default().title("Flimflam"))
@@ -53,25 +61,34 @@ fn main() -> anyhow::Result<()> {
 }
 
 struct Game {
-    pos: Vec2,
+    client: Client,
+    player: Player,
+    other_players: HashMap<Client, Player>,
     server_connection: BufReader<TcpStream>,
-    updates_rx: Receiver<Update>,
+    events_rx: Receiver<Event>,
 }
 
 impl Game {
-    fn new(server_connection: TcpStream, updates_rx: Receiver<Update>) -> Self {
+    fn new(client: Client, server_connection: TcpStream, events_rx: Receiver<Event>) -> Self {
         Self {
-            pos: Vec2::zero(),
+            client,
+            player: Player {
+                position: Vec2::zero(),
+            },
+            other_players: HashMap::new(),
             server_connection: BufReader::new(server_connection),
-            updates_rx,
+            events_rx,
         }
     }
 
     fn process_outstanding_updates(&mut self) {
-        for update in self.updates_rx.try_iter() {
-            match update {
-                Update::PlayerMoved(pos) => self.pos = pos,
-            }
+        for event in self.events_rx.try_iter() {
+            let (client, player) = match event {
+                Event::PlayerUpdate(c, p) => (c, p),
+                Event::JoinGame(c, p) => (c, p),
+            };
+
+            self.other_players.insert(client, player);
         }
     }
 }
@@ -107,11 +124,11 @@ impl EventHandler for Game {
         let diff = movement * SPEED * timer::delta(ctx).as_secs_f32();
 
         if diff != Vec2::zero() {
-            self.pos += diff;
+            self.player.position += diff;
 
             jsonl::write(
                 self.server_connection.get_mut(),
-                &Event::PlayerMoved(self.pos),
+                &Event::PlayerUpdate(self.client.clone(), self.player.clone()),
             )
             .unwrap_or_else(|err| eprintln!("Error: {:?}", anyhow::Error::new(err)));
         }
@@ -122,14 +139,16 @@ impl EventHandler for Game {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, graphics::BLACK);
 
-        let rect = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            graphics::Rect::new(self.pos.x, self.pos.y, 10.0, 20.0),
-            graphics::Color::new(1.0, 0.0, 0.0, 1.0),
-        )?;
+        for player in self.other_players.values().chain(iter::once(&self.player)) {
+            let rect = graphics::Mesh::new_rectangle(
+                ctx,
+                graphics::DrawMode::fill(),
+                graphics::Rect::new(player.position.x, player.position.y, 10.0, 20.0),
+                graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+            )?;
 
-        graphics::draw(ctx, &rect, ([0.0, 0.0],))?;
+            graphics::draw(ctx, &rect, ([0.0, 0.0],))?;
+        }
 
         graphics::present(ctx)?;
 
@@ -137,13 +156,13 @@ impl EventHandler for Game {
     }
 }
 
-fn listen_for_updates(tx: Sender<Update>, address: SocketAddr) -> anyhow::Result<()> {
+fn listen_for_events(tx: Sender<Event>, address: SocketAddr) -> anyhow::Result<()> {
     let listener = TcpListener::bind(address)?;
 
     for stream in listener.incoming() {
         let stream = BufReader::new(stream?);
-        let update = jsonl::read(stream)?;
-        tx.send(update)?;
+        let event = jsonl::read(stream)?;
+        tx.send(event)?;
     }
 
     Ok(())
