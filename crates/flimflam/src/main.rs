@@ -11,7 +11,7 @@ use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::{env, iter, thread};
 use ultraviolet::Vec2;
 
-const SPEED: f32 = 100.0;
+const SPEED: f32 = 200.0;
 
 fn main() -> anyhow::Result<()> {
     let mut server_connection = {
